@@ -473,6 +473,18 @@ def init_database():
                 conn.close()
 
 
+    except Exception as e:
+
+        if conn:
+            conn.rollback()
+
+        raise e
+
+    finally:
+
+        if conn:
+            conn.close()
+
 # ============================================================
 # CONNECTION TEST + INITIALIZATION
 # ============================================================
@@ -2462,4 +2474,3 @@ st.sidebar.caption(
 st.sidebar.caption(
     "Streamlit + MySQL + Aiven"
 )
-```
