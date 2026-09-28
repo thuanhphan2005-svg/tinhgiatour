@@ -704,8 +704,12 @@ def calculate_room_price(
 # SIDEBAR
 # ============================================================
 
-st.sidebar.title("🏨 HOTEL TOUR")
+st.sidebar.image(
+    "cuto_dai.jpg",
+    use_container_width=True
+)
 
+st.sidebar.title("🏨 HOTEL TOUR")
 st.sidebar.caption(
     "Hotel Room & Tour Cost Management"
 )
