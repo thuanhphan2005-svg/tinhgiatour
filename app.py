@@ -1,6 +1,7 @@
 import streamlit as st
 import pymysql
 import pandas as pd
+import ssl
 from datetime import date, datetime, timedelta
 
 
@@ -28,6 +29,10 @@ MYSQL_PASSWORD = "AVNS_upB8uNn3pMtP9iw0afh"
 # Database mặc định của Aiven MySQL
 MYSQL_DATABASE = "defaultdb"
 
+# Aiven MySQL mặc định cho phép kết nối bằng PyMySQL.
+# Để False giúp tránh lỗi CA/SSL trên một số môi trường Streamlit Cloud.
+MYSQL_USE_SSL = False
+
 
 # ============================================================
 # MYSQL CONNECTION
@@ -35,32 +40,30 @@ MYSQL_DATABASE = "defaultdb"
 
 def get_connection():
     """
-    Tạo kết nối đến MySQL Aiven.
-
-    TLS được bật để mã hóa dữ liệu truyền giữa
-    Streamlit và Aiven MySQL.
+    Kết nối MySQL Aiven.
     """
 
-    return pymysql.connect(
-        host=MYSQL_HOST,
-        port=MYSQL_PORT,
-        user=MYSQL_USER,
-        password=MYSQL_PASSWORD,
-        database=MYSQL_DATABASE,
-        charset="utf8mb4",
+    connection_kwargs = {
+        "host": MYSQL_HOST,
+        "port": MYSQL_PORT,
+        "user": MYSQL_USER,
+        "password": MYSQL_PASSWORD,
+        "database": MYSQL_DATABASE,
+        "charset": "utf8mb4",
+        "connect_timeout": 20,
+        "read_timeout": 30,
+        "write_timeout": 30,
+        "cursorclass": pymysql.cursors.DictCursor,
+        "autocommit": False,
+    }
 
-        # TLS/SSL
-        ssl={
-            "check_hostname": False
-        },
+    if MYSQL_USE_SSL:
+        ssl_context = ssl.create_default_context()
+        ssl_context.check_hostname = False
+        ssl_context.verify_mode = ssl.CERT_NONE
+        connection_kwargs["ssl"] = ssl_context
 
-        connect_timeout=15,
-        read_timeout=30,
-        write_timeout=30,
-
-        cursorclass=pymysql.cursors.DictCursor,
-        autocommit=False
-    )
+    return pymysql.connect(**connection_kwargs)
 
 
 # ============================================================
@@ -497,8 +500,13 @@ except Exception as e:
 
     st.error("❌ Không thể kết nối MySQL Aiven.")
 
+    st.warning(
+        "Chi tiết lỗi bên dưới. Nếu lỗi là Access denied, host/port/password "
+        "sai. Nếu lỗi là SSL/TLS, hãy dùng CA certificate của Aiven."
+    )
+
     st.code(
-        str(e),
+        f"{type(e).__name__}: {e}",
         language="text"
     )
 
